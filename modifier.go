@@ -1,15 +1,29 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
-	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/markhaur/srt-time-modifier/config"
 )
 
+func main() {
+	filename := "config"
+	filepath := "."
+
+	configuration, err := config.GetConfiguration(filename, filepath)
+
+	if err != nil {
+		fmt.Printf("error reading configs: %v", err)
+	}
+
+	for _, cf := range configuration.Files {
+		fmt.Printf("filename: %v with modifValue: %v\n", cf.FilePath, cf.ModifyValue)
+	}
+}
+
+/*
 func main() {
 
 	if len(os.Args) < 4 {
@@ -76,7 +90,7 @@ func main() {
 	}
 
 }
-
+*/
 // currently supports subtraction of time
 func addValueToTime(time string, value int) string {
 	parts := strings.Split(time, ",")

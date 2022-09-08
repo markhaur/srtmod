@@ -1,0 +1,15 @@
+files:
+  [
+    {
+      filePath: "/home/markhaur/srt",
+      modifyValue: 2
+    },
+    {
+      filePath: "/home/markhaur/srt-time",
+      modifyValue: 3
+    },
+    {
+      filePath: "/home/markhaur/srt-time-modifier",
+      modifyValue: 4
+    }
+  ]
