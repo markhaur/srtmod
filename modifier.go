@@ -1,13 +1,27 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
+	"github.com/alecthomas/kong"
 	"github.com/markhaur/srt-time-modifier/config"
 )
 
+var cli struct {
+	Config     string `help:"Path to configuration file."`
+	Inputfile  string `help:"Path to input file."`
+	Outputfile string `help:"Path to output file."`
+	Modifval   int    `help:"Time modify value. Must be negative."`
+}
+
+/*
 func main() {
 	filename := "config"
 	filepath := "."
@@ -22,20 +36,37 @@ func main() {
 		fmt.Printf("filename: %v with modifValue: %v\n", cf.FilePath, cf.ModifyValue)
 	}
 }
+*/
 
-/*
 func main() {
 
-	if len(os.Args) < 4 {
-		fmt.Println("Usage: go run modifier.go <inputfile> <outputfile> <modify value>")
-		return
+	kong.Parse(&cli)
+
+	if cli.Inputfile != "" && cli.Outputfile != "" && cli.Modifval < 0 {
+		fmt.Printf("Processing %v\n", cli.Inputfile)
+		process(cli.Inputfile, cli.Outputfile, cli.Modifval)
+	} else if cli.Config != "" {
+		fmt.Printf("config: %v\n", cli.Config)
+		configuration, err := config.GetConfiguration(cli.Config)
+		if err != nil {
+			fmt.Printf("invalid config file path: %v\n", err)
+		}
+		var wg sync.WaitGroup
+		for _, cf := range configuration.Files {
+			wg.Add(1)
+			go func(iFile string, oFile string, mVal int) {
+				process(iFile, oFile, mVal)
+				wg.Done()
+			}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
+		}
+		wg.Wait()
+	} else {
+		fmt.Errorf("invalid command")
 	}
 
-	inputFile := os.Args[1]
-	outputFile := os.Args[2]
-	modifyValue, _ := strconv.Atoi(os.Args[3])
+}
 
-	fmt.Printf("Processing %v\n", inputFile)
+func process(inputFile string, outputFile string, modifyValue int) {
 
 	inpFile, err := os.Open(inputFile)
 
@@ -90,7 +121,7 @@ func main() {
 	}
 
 }
-*/
+
 // currently supports subtraction of time
 func addValueToTime(time string, value int) string {
 	parts := strings.Split(time, ",")

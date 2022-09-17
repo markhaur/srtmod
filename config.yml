@@ -1,15 +1,18 @@
 files:
   [
     {
-      filePath: "/home/markhaur/srt",
-      modifyValue: 2
+      inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E01.srt",
+      outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E01.srt",
+      modifyValue: -2
     },
     {
-      filePath: "/home/markhaur/srt-time",
-      modifyValue: 3
+      inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E24.srt",
+      outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E24.srt",
+      modifyValue: -3
     },
     {
-      filePath: "/home/markhaur/srt-time-modifier",
-      modifyValue: 4
+      inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E25.srt",
+      outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E25.srt",
+      modifyValue: -4
     }
   ]
