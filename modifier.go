@@ -25,8 +25,8 @@ func main() {
 	var outputFile string
 	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
 	flag.DurationVar(&duration, "duration", 0, "Time modify duration. Must be negative for now.")
-	flag.StringVar(&inputFile, "i", "./input/Hz.Omer.S01E01.srt", "Path to input file.")
-	flag.StringVar(&outputFile, "o", "./output/Hz.Omer.S01E01.srt", "Path to output file.")
+	flag.StringVar(&inputFile, "i", "", "Path to input file.")
+	flag.StringVar(&outputFile, "o", "", "Path to output file.")
 	flag.Parse()
 
 	if inputFile != "" && outputFile != "" && duration < 0 {
