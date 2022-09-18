@@ -45,7 +45,7 @@ func main() {
 	var wg sync.WaitGroup
 	for _, cf := range configuration.Files {
 		wg.Add(1)
-		go func(iFile string, oFile string, mVal time.Duration) {
+		go func(in, out string, offset time.Duration) {
 			defer wg.Done()
 			err := process(iFile, oFile, mVal)
 			if err != nil {
