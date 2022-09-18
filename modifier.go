@@ -47,9 +47,9 @@ func main() {
 		wg.Add(1)
 		go func(in, out string, offset time.Duration) {
 			defer wg.Done()
-			err := process(iFile, oFile, mVal)
+			err := process(in, out, offset)
 			if err != nil {
-				log.Printf("could not process file %s: %v\n", iFile, err)
+				log.Printf("could not process file %s: %v\n", in, err)
 			}
 		}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
 	}
@@ -57,13 +57,13 @@ func main() {
 }
 
 func process(inputPath string, outputPath string, offset time.Duration) error {
-	inpFile, err := os.Open(inputFile)
+	inpFile, err := os.Open(inputPath)
 	if err != nil {
 		return errors.Wrap(err, "could not open input file")
 	}
 	defer inpFile.Close()
 
-	outFile, err := os.Create(outputFile)
+	outFile, err := os.Create(outputPath)
 	if err != nil {
 		return errors.Wrap(err, "could not create output file")
 	}
@@ -78,14 +78,14 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 			startTime := times[0]
 			endTime := times[2]
 
-			modifiedStartTime := addValueToTime(startTime, modifyValue)
-			modifiedEndTime := addValueToTime(endTime, modifyValue)
+			modifiedStartTime := applyOffset(startTime, offset)
+			modifiedEndTime := applyOffset(endTime, offset)
 			text = fmt.Sprintf("%s --> %s", modifiedStartTime, modifiedEndTime)
 		}
 		outFile.WriteString(text + "\n")
 	}
 
-	fmt.Printf("Processed %v\n", inputFile)
+	log.Printf("Processed %v\n", inputPath)
 	if err := scanner.Err(); err != nil {
 		return errors.Wrap(err, "could not scan")
 	}
@@ -103,7 +103,7 @@ func applyOffset(time string, offset time.Duration) string {
 	min, _ := strconv.Atoi(timeParts[1])
 	hrs, _ := strconv.Atoi(timeParts[0])
 
-	sec += int(value.Seconds())
+	sec += int(offset.Seconds())
 
 	if sec < 0 {
 		sec += 60

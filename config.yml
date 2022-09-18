@@ -4,7 +4,7 @@ files:
     modifyValue: -1m
   - inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E24.srt"
     outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E24.srt"
-    modifyValue: -1m
+    modifyValue: -5s
   - inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E25.srt"
     outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E25.srt"
     modifyValue: -4s
