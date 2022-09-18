@@ -56,7 +56,7 @@ func main() {
 	wg.Wait()
 }
 
-func process(inputFile string, outputFile string, modifyValue time.Duration) error {
+func process(inputPath string, outputPath string, offset time.Duration) error {
 	inpFile, err := os.Open(inputFile)
 	if err != nil {
 		return errors.Wrap(err, "could not open input file")
