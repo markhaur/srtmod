@@ -91,7 +91,6 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 	}
 
 	return nil
-
 }
 
 // currently supports subtraction of time
