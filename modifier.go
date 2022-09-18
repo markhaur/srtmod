@@ -94,7 +94,7 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 }
 
 // currently supports subtraction of time
-func addValueToTime(time string, value time.Duration) string {
+func applyOffset(time string, offset time.Duration) string {
 	parts := strings.Split(time, ",")
 
 	timeParts := strings.Split(parts[0], ":")
