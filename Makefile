@@ -1,4 +1,4 @@
-.PHONY: build
+.PHONY: clean
 
 default: build
 
