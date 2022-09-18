@@ -33,7 +33,7 @@ func main() {
 	var inputPath string
 	var outputPath string
 	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
-	flag.DurationVar(&duration, "duration", 0, "Time modify duration. Must be negative for now.")
+	flag.DurationVar(&duration, "duration", 0, "Time modify duration like 1s, 1m, -1m")
 	flag.StringVar(&inputPath, "i", "", "Path to input file.")
 	flag.StringVar(&outputPath, "o", "", "Path to output file.")
 	flag.Parse()
