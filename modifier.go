@@ -37,7 +37,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	configuration, err := config.GetConfiguration(configPath)
+	configuration, err := config.FromPath(configPath)
 	if err != nil {
 		log.Fatalf("could not load config from path %s: %v\n", configPath, err)
 	}
