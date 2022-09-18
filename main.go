@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Configuration struct {
+type configuration struct {
 	Files []struct {
 		InputFile  string        `yaml:"inputFile"`
 		OutputFile string        `yaml:"outputFile"`
@@ -52,7 +52,7 @@ func main() {
 	}
 	defer f.Close()
 
-	var config Configuration
+	var config configuration
 	if err := yaml.NewDecoder(f).Decode(&config); err != nil {
 		log.Fatalf("could not decode file contents from path %s: %v\n", configPath, err)
 	}
