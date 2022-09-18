@@ -21,18 +21,18 @@ var regexPattern = regexp.MustCompile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [
 func main() {
 	var configPath string
 	var duration time.Duration
-	var inputFile string
-	var outputFile string
+	var inputPath string
+	var outputPath string
 	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
 	flag.DurationVar(&duration, "duration", 0, "Time modify duration. Must be negative for now.")
-	flag.StringVar(&inputFile, "i", "", "Path to input file.")
-	flag.StringVar(&outputFile, "o", "", "Path to output file.")
+	flag.StringVar(&inputPath, "i", "", "Path to input file.")
+	flag.StringVar(&outputPath, "o", "", "Path to output file.")
 	flag.Parse()
 
-	if inputFile != "" && outputFile != "" && duration < 0 {
-		err := process(inputFile, outputFile, duration)
+	if inputPath != "" && outputPath != "" && duration < 0 {
+		err := process(inputPath, outputPath, duration)
 		if err != nil {
-			log.Fatalf("could not process file %s: %v", inputFile, err)
+			log.Fatalf("could not process file %s: %v", inputPath, err)
 		}
 		os.Exit(0)
 	}
@@ -57,11 +57,11 @@ func main() {
 }
 
 func process(inputPath string, outputPath string, offset time.Duration) error {
-	inpFile, err := os.Open(inputPath)
+	inFile, err := os.Open(inputPath)
 	if err != nil {
 		return errors.Wrap(err, "could not open input file")
 	}
-	defer inpFile.Close()
+	defer inFile.Close()
 
 	outFile, err := os.Create(outputPath)
 	if err != nil {
@@ -69,7 +69,7 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 	}
 	defer outFile.Close()
 
-	scanner := bufio.NewScanner(inpFile)
+	scanner := bufio.NewScanner(inFile)
 	for scanner.Scan() {
 		text := scanner.Text()
 
