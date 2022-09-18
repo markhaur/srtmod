@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -9,121 +10,92 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
-	"github.com/alecthomas/kong"
 	"github.com/markhaur/srt-time-modifier/config"
+	"github.com/pkg/errors"
 )
 
-var cli struct {
-	Config     string `help:"Path to configuration file."`
-	Inputfile  string `help:"Path to input file."`
-	Outputfile string `help:"Path to output file."`
-	Modifval   int    `help:"Time modify value. Must be negative."`
-}
-
-/*
-func main() {
-	filename := "config"
-	filepath := "."
-
-	configuration, err := config.GetConfiguration(filename, filepath)
-
-	if err != nil {
-		fmt.Printf("error reading configs: %v", err)
-	}
-
-	for _, cf := range configuration.Files {
-		fmt.Printf("filename: %v with modifValue: %v\n", cf.FilePath, cf.ModifyValue)
-	}
-}
-*/
+var regexPattern = regexp.MustCompile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
 
 func main() {
+	var configPath string
+	var duration time.Duration
+	var inputFile string
+	var outputFile string
+	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
+	flag.DurationVar(&duration, "duration", 0, "Time modify duration. Must be negative for now.")
+	flag.StringVar(&inputFile, "i", "./input/Hz.Omer.S01E01.srt", "Path to input file.")
+	flag.StringVar(&outputFile, "o", "./output/Hz.Omer.S01E01.srt", "Path to output file.")
+	flag.Parse()
 
-	kong.Parse(&cli)
-
-	if cli.Inputfile != "" && cli.Outputfile != "" && cli.Modifval < 0 {
-		fmt.Printf("Processing %v\n", cli.Inputfile)
-		process(cli.Inputfile, cli.Outputfile, cli.Modifval)
-	} else if cli.Config != "" {
-		fmt.Printf("config: %v\n", cli.Config)
-		configuration, err := config.GetConfiguration(cli.Config)
+	if inputFile != "" && outputFile != "" && duration < 0 {
+		err := process(inputFile, outputFile, duration)
 		if err != nil {
-			fmt.Printf("invalid config file path: %v\n", err)
+			log.Fatalf("could not process file %s: %v", inputFile, err)
 		}
-		var wg sync.WaitGroup
-		for _, cf := range configuration.Files {
-			wg.Add(1)
-			go func(iFile string, oFile string, mVal int) {
-				process(iFile, oFile, mVal)
-				wg.Done()
-			}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
-		}
-		wg.Wait()
-	} else {
-		fmt.Errorf("invalid command")
+		os.Exit(0)
 	}
 
+	configuration, err := config.GetConfiguration(configPath)
+	if err != nil {
+		log.Fatalf("could not load config from path %s: %v\n", configPath, err)
+	}
+
+	var wg sync.WaitGroup
+	for _, cf := range configuration.Files {
+		wg.Add(1)
+		go func(iFile string, oFile string, mVal time.Duration) {
+			defer wg.Done()
+			err := process(iFile, oFile, mVal)
+			if err != nil {
+				log.Printf("could not process file %s: %v\n", iFile, err)
+			}
+		}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
+	}
+	wg.Wait()
 }
 
-func process(inputFile string, outputFile string, modifyValue int) {
-
+func process(inputFile string, outputFile string, modifyValue time.Duration) error {
 	inpFile, err := os.Open(inputFile)
-
 	if err != nil {
-		log.Fatal(err)
-		return
+		return errors.Wrap(err, "could not open input file")
 	}
-
-	fmt.Printf("Creating %v if not exists\n", outputFile)
-	outFile, err := os.Create(outputFile)
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
 	defer inpFile.Close()
+
+	outFile, err := os.Create(outputFile)
+	if err != nil {
+		return errors.Wrap(err, "could not create output file")
+	}
 	defer outFile.Close()
 
 	scanner := bufio.NewScanner(inpFile)
-
-	subtitleCounter := 0
-	regexPattern, _ := regexp.Compile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
-
 	for scanner.Scan() {
-
 		text := scanner.Text()
 
 		if regexPattern.MatchString(text) {
-			// split the time into start time and end time
 			times := strings.Split(text, " ")
 			startTime := times[0]
 			endTime := times[2]
 
-			// subtract time from start time
 			modifiedStartTime := addValueToTime(startTime, modifyValue)
-
-			// subtract time from end time
 			modifiedEndTime := addValueToTime(endTime, modifyValue)
-
-			// combines the time
-			text = modifiedStartTime + " --> " + modifiedEndTime
+			text = fmt.Sprintf("%s --> %s", modifiedStartTime, modifiedEndTime)
 		}
-		// write processed information into file
 		outFile.WriteString(text + "\n")
-		subtitleCounter += 1
 	}
 
 	fmt.Printf("Processed %v\n", inputFile)
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return errors.Wrap(err, "could not scan")
 	}
+
+	return nil
 
 }
 
 // currently supports subtraction of time
-func addValueToTime(time string, value int) string {
+func addValueToTime(time string, value time.Duration) string {
 	parts := strings.Split(time, ",")
 
 	timeParts := strings.Split(parts[0], ":")
@@ -132,7 +104,7 @@ func addValueToTime(time string, value int) string {
 	min, _ := strconv.Atoi(timeParts[1])
 	hrs, _ := strconv.Atoi(timeParts[0])
 
-	sec += value
+	sec += int(value.Seconds())
 
 	if sec < 0 {
 		sec += 60
@@ -161,5 +133,5 @@ func addValueToTime(time string, value int) string {
 		timeParts[2] = strconv.Itoa(sec)
 	}
 
-	return timeParts[0] + ":" + timeParts[1] + ":" + timeParts[2] + "," + parts[1]
+	return fmt.Sprintf("%s:%s:%s,%s", timeParts[0], timeParts[1], timeParts[2], parts[1])
 }

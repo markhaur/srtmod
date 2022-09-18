@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -18,12 +19,11 @@ func (c *Configuration) GetFiles() []FileConfiguration {
 type FileConfiguration struct {
 	InputFile   string
 	OutputFile  string
-	ModifyValue int
+	ModifyValue time.Duration
 }
 
 func GetConfiguration(path string) (*Configuration, error) {
 	dir, file := filepath.Split(path)
-	fmt.Printf("base path: %v\n", file)
 	viper.SetConfigName(file)
 	viper.AddConfigPath(dir)
 	viper.AutomaticEnv()
