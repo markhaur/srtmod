@@ -51,7 +51,7 @@ func main() {
 			if err != nil {
 				log.Printf("could not process file %s: %v\n", in, err)
 			}
-		}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
+		}(cf.InputFile, cf.OutputFile, cf.Offset)
 	}
 	wg.Wait()
 }
