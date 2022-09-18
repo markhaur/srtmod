@@ -2,83 +2,99 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/markhaur/srt-time-modifier/config"
+	"github.com/pkg/errors"
 )
 
+var regexPattern = regexp.MustCompile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
+
 func main() {
+	var configPath string
+	var duration time.Duration
+	var inputPath string
+	var outputPath string
+	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
+	flag.DurationVar(&duration, "duration", 0, "Time modify duration. Must be negative for now.")
+	flag.StringVar(&inputPath, "i", "", "Path to input file.")
+	flag.StringVar(&outputPath, "o", "", "Path to output file.")
+	flag.Parse()
 
-	if len(os.Args) < 4 {
-		fmt.Println("Usage: go run modifier.go <inputfile> <outputfile> <modify value>")
-		return
+	if inputPath != "" && outputPath != "" && duration < 0 {
+		err := process(inputPath, outputPath, duration)
+		if err != nil {
+			log.Fatalf("could not process file %s: %v", inputPath, err)
+		}
+		os.Exit(0)
 	}
 
-	inputFile := os.Args[1]
-	outputFile := os.Args[2]
-	modifyValue, _ := strconv.Atoi(os.Args[3])
-
-	fmt.Printf("Processing %v\n", inputFile)
-
-	inpFile, err := os.Open(inputFile)
-
+	configuration, err := config.FromPath(configPath)
 	if err != nil {
-		log.Fatal(err)
-		return
+		log.Fatalf("could not load config from path %s: %v\n", configPath, err)
 	}
 
-	fmt.Printf("Creating %v if not exists\n", outputFile)
-	outFile, err := os.Create(outputFile)
+	var wg sync.WaitGroup
+	for _, cf := range configuration.Files {
+		wg.Add(1)
+		go func(in, out string, offset time.Duration) {
+			defer wg.Done()
+			err := process(in, out, offset)
+			if err != nil {
+				log.Printf("could not process file %s: %v\n", in, err)
+			}
+		}(cf.InputFile, cf.OutputFile, cf.ModifyValue)
+	}
+	wg.Wait()
+}
 
+func process(inputPath string, outputPath string, offset time.Duration) error {
+	inFile, err := os.Open(inputPath)
 	if err != nil {
-		log.Fatal(err)
-		return
+		return errors.Wrap(err, "could not open input file")
 	}
+	defer inFile.Close()
 
-	defer inpFile.Close()
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return errors.Wrap(err, "could not create output file")
+	}
 	defer outFile.Close()
 
-	scanner := bufio.NewScanner(inpFile)
-
-	subtitleCounter := 0
-	regexPattern, _ := regexp.Compile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
-
+	scanner := bufio.NewScanner(inFile)
 	for scanner.Scan() {
-
 		text := scanner.Text()
 
 		if regexPattern.MatchString(text) {
-			// split the time into start time and end time
 			times := strings.Split(text, " ")
 			startTime := times[0]
 			endTime := times[2]
 
-			// subtract time from start time
-			modifiedStartTime := addValueToTime(startTime, modifyValue)
-
-			// subtract time from end time
-			modifiedEndTime := addValueToTime(endTime, modifyValue)
-
-			// combines the time
-			text = modifiedStartTime + " --> " + modifiedEndTime
+			modifiedStartTime := applyOffset(startTime, offset)
+			modifiedEndTime := applyOffset(endTime, offset)
+			text = fmt.Sprintf("%s --> %s", modifiedStartTime, modifiedEndTime)
 		}
-		// write processed information into file
 		outFile.WriteString(text + "\n")
-		subtitleCounter += 1
 	}
 
-	fmt.Printf("Processed %v\n", inputFile)
+	log.Printf("Processed %v\n", inputPath)
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return errors.Wrap(err, "could not scan")
 	}
 
+	return nil
 }
 
 // currently supports subtraction of time
-func addValueToTime(time string, value int) string {
+func applyOffset(time string, offset time.Duration) string {
 	parts := strings.Split(time, ",")
 
 	timeParts := strings.Split(parts[0], ":")
@@ -87,7 +103,7 @@ func addValueToTime(time string, value int) string {
 	min, _ := strconv.Atoi(timeParts[1])
 	hrs, _ := strconv.Atoi(timeParts[0])
 
-	sec += value
+	sec += int(offset.Seconds())
 
 	if sec < 0 {
 		sec += 60
@@ -116,5 +132,5 @@ func addValueToTime(time string, value int) string {
 		timeParts[2] = strconv.Itoa(sec)
 	}
 
-	return timeParts[0] + ":" + timeParts[1] + ":" + timeParts[2] + "," + parts[1]
+	return fmt.Sprintf("%s:%s:%s,%s", timeParts[0], timeParts[1], timeParts[2], parts[1])
 }
