@@ -7,16 +7,25 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/markhaur/srt-time-modifier/config"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
+type configuration struct {
+	Files []struct {
+		InputFile  string        `yaml:"inputFile"`
+		OutputFile string        `yaml:"outputFile"`
+		Offset     time.Duration `yaml:"offset"`
+	} `yaml:"files"`
+}
+
 var regexPattern = regexp.MustCompile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
+
+const timeFormat = "15:04:05,000"
 
 func main() {
 	var configPath string
@@ -37,13 +46,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	configuration, err := config.FromPath(configPath)
+	f, err := os.Open(configPath)
 	if err != nil {
-		log.Fatalf("could not load config from path %s: %v\n", configPath, err)
+		log.Fatalf("could not open file from path %s: %v\n", configPath, err)
+	}
+	defer f.Close()
+
+	var config configuration
+	if err := yaml.NewDecoder(f).Decode(&config); err != nil {
+		log.Fatalf("could not decode file contents from path %s: %v\n", configPath, err)
 	}
 
 	var wg sync.WaitGroup
-	for _, cf := range configuration.Files {
+	for _, cf := range config.Files {
 		wg.Add(1)
 		go func(in, out string, offset time.Duration) {
 			defer wg.Done()
@@ -74,13 +89,22 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 		text := scanner.Text()
 
 		if regexPattern.MatchString(text) {
-			times := strings.Split(text, " ")
-			startTime := times[0]
-			endTime := times[2]
+			times := strings.Split(text, " --> ")
 
-			modifiedStartTime := applyOffset(startTime, offset)
-			modifiedEndTime := applyOffset(endTime, offset)
-			text = fmt.Sprintf("%s --> %s", modifiedStartTime, modifiedEndTime)
+			startTime, err := time.Parse(timeFormat, times[0])
+			if err != nil {
+				return errors.Wrap(err, "could not parse time")
+			}
+
+			endTime, err := time.Parse(timeFormat, times[1])
+			if err != nil {
+				return errors.Wrap(err, "could not parse time")
+			}
+
+			startTime = startTime.Add(offset)
+			endTime = endTime.Add(offset)
+
+			text = fmt.Sprintf("%s --> %s", startTime.Format(timeFormat), endTime.Format(timeFormat))
 		}
 		outFile.WriteString(text + "\n")
 	}
@@ -91,46 +115,4 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 	}
 
 	return nil
-}
-
-// currently supports subtraction of time
-func applyOffset(time string, offset time.Duration) string {
-	parts := strings.Split(time, ",")
-
-	timeParts := strings.Split(parts[0], ":")
-
-	sec, _ := strconv.Atoi(timeParts[2])
-	min, _ := strconv.Atoi(timeParts[1])
-	hrs, _ := strconv.Atoi(timeParts[0])
-
-	sec += int(offset.Seconds())
-
-	if sec < 0 {
-		sec += 60
-		min -= 1
-		if min < 0 {
-			min += 60
-			hrs -= 1
-		}
-	}
-
-	if hrs < 10 {
-		timeParts[0] = "0" + strconv.Itoa(hrs)
-	} else {
-		timeParts[0] = strconv.Itoa(hrs)
-	}
-
-	if min < 10 {
-		timeParts[1] = "0" + strconv.Itoa(min)
-	} else {
-		timeParts[1] = strconv.Itoa(min)
-	}
-
-	if sec < 10 {
-		timeParts[2] = "0" + strconv.Itoa(sec)
-	} else {
-		timeParts[2] = strconv.Itoa(sec)
-	}
-
-	return fmt.Sprintf("%s:%s:%s,%s", timeParts[0], timeParts[1], timeParts[2], parts[1])
 }
