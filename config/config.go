@@ -22,7 +22,7 @@ type FileConfiguration struct {
 	ModifyValue time.Duration
 }
 
-func GetConfiguration(path string) (*Configuration, error) {
+func FromPath(path string) (*Configuration, error) {
 	dir, file := filepath.Split(path)
 	viper.SetConfigName(file)
 	viper.AddConfigPath(dir)
