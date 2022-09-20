@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"regexp"
@@ -16,11 +17,13 @@ import (
 )
 
 type configuration struct {
-	Files []struct {
-		InputFile  string        `yaml:"inputFile"`
-		OutputFile string        `yaml:"outputFile"`
-		Offset     time.Duration `yaml:"offset"`
-	} `yaml:"files"`
+	Files []file `yaml:"files"`
+}
+
+type file struct {
+	InputFile  string        `yaml:"inputFile"`
+	OutputFile string        `yaml:"outputFile"`
+	Offset     time.Duration `yaml:"offset"`
 }
 
 var regexPattern = regexp.MustCompile("[0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3} --> [0-9]{2}:[0-9]{2}:[0-9]{2},[0-9]{3}")
@@ -29,62 +32,61 @@ const timeFormat = "15:04:05,000"
 
 func main() {
 	var configPath string
-	var duration time.Duration
+	var offset time.Duration
 	var inputPath string
 	var outputPath string
 	flag.StringVar(&configPath, "config", "config.yml", "Path to configuration file.")
-	flag.DurationVar(&duration, "duration", 0, "Time modify duration like 1s, 1m, -1m")
+	flag.DurationVar(&offset, "offset", 0, "Time modify duration like 1s, 1m, -1m")
 	flag.StringVar(&inputPath, "i", "", "Path to input file.")
 	flag.StringVar(&outputPath, "o", "", "Path to output file.")
 	flag.Parse()
 
-	if inputPath != "" && outputPath != "" {
-		err := process(inputPath, outputPath, duration)
-		if err != nil {
-			log.Fatalf("could not process file %s: %v", inputPath, err)
-		}
-		os.Exit(0)
-	}
-
-	f, err := os.Open(configPath)
-	if err != nil {
-		log.Fatalf("could not open config file from path %s: %v\n", configPath, err)
-	}
-	defer f.Close()
-
 	var config configuration
-	if err := yaml.NewDecoder(f).Decode(&config); err != nil {
-		log.Fatalf("could not decode config file contents from path %s: %v\n", configPath, err)
+	switch {
+	case inputPath != "" && outputPath != "":
+		config.Files = append(config.Files, file{inputPath, outputPath, offset})
+	default:
+		f, err := os.Open(configPath)
+		if err != nil {
+			log.Fatalf("could not open config file from path %s: %v\n", configPath, err)
+		}
+		defer f.Close()
+
+		if err := yaml.NewDecoder(f).Decode(&config); err != nil {
+			log.Fatalf("could not decode config file contents from path %s: %v\n", configPath, err)
+		}
 	}
 
 	var wg sync.WaitGroup
 	for _, cf := range config.Files {
+		in, err := os.Open(cf.InputFile)
+		if err != nil {
+			log.Printf("could not open input file at path %s: %v", cf.InputFile, err)
+		}
+		defer in.Close()
+
+		out, err := os.Create(cf.OutputFile)
+		if err != nil {
+			log.Printf("could not create output file at path %s: %v", cf.OutputFile, err)
+		}
+		defer out.Close()
+
 		wg.Add(1)
-		go func(in, out string, offset time.Duration) {
+		go func(in, out *os.File, offset time.Duration) {
 			defer wg.Done()
 			err := process(in, out, offset)
 			if err != nil {
-				log.Printf("could not process file %s: %v\n", in, err)
+				log.Printf("could not process file %s: %v\n", in.Name(), err)
+				return
 			}
-		}(cf.InputFile, cf.OutputFile, cf.Offset)
+			log.Printf("Processed %s\n", in.Name())
+		}(in, out, cf.Offset)
 	}
 	wg.Wait()
 }
 
-func process(inputPath string, outputPath string, offset time.Duration) error {
-	inFile, err := os.Open(inputPath)
-	if err != nil {
-		return errors.Wrap(err, "could not open input file")
-	}
-	defer inFile.Close()
-
-	outFile, err := os.Create(outputPath)
-	if err != nil {
-		return errors.Wrap(err, "could not create output file")
-	}
-	defer outFile.Close()
-
-	scanner := bufio.NewScanner(inFile)
+func process(input io.Reader, output io.Writer, offset time.Duration) error {
+	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		text := scanner.Text()
 
@@ -106,10 +108,9 @@ func process(inputPath string, outputPath string, offset time.Duration) error {
 
 			text = fmt.Sprintf("%s --> %s", startTime.Format(timeFormat), endTime.Format(timeFormat))
 		}
-		outFile.WriteString(text + "\n")
+		fmt.Fprintf(output, "%s\n", text)
 	}
 
-	log.Printf("Processed %v\n", inputPath)
 	if err := scanner.Err(); err != nil {
 		return errors.Wrap(err, "could not scan")
 	}

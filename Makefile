@@ -1,4 +1,4 @@
-.PHONY: clean
+.PHONY: clean test build
 
 default: build
 
@@ -8,3 +8,6 @@ clean:
 
 build:
 	go build -o app main.go
+
+test:
+	go test -cover
