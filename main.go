@@ -32,13 +32,13 @@ func main() {
 	var duration time.Duration
 	var inputPath string
 	var outputPath string
-	flag.StringVar(&configPath, "config", "./config.yml", "Path to configuration file.")
+	flag.StringVar(&configPath, "config", "config.yml", "Path to configuration file.")
 	flag.DurationVar(&duration, "duration", 0, "Time modify duration like 1s, 1m, -1m")
 	flag.StringVar(&inputPath, "i", "", "Path to input file.")
 	flag.StringVar(&outputPath, "o", "", "Path to output file.")
 	flag.Parse()
 
-	if inputPath != "" && outputPath != "" && duration < 0 {
+	if inputPath != "" && outputPath != "" {
 		err := process(inputPath, outputPath, duration)
 		if err != nil {
 			log.Fatalf("could not process file %s: %v", inputPath, err)
@@ -48,13 +48,13 @@ func main() {
 
 	f, err := os.Open(configPath)
 	if err != nil {
-		log.Fatalf("could not open file from path %s: %v\n", configPath, err)
+		log.Fatalf("could not open config file from path %s: %v\n", configPath, err)
 	}
 	defer f.Close()
 
 	var config configuration
 	if err := yaml.NewDecoder(f).Decode(&config); err != nil {
-		log.Fatalf("could not decode file contents from path %s: %v\n", configPath, err)
+		log.Fatalf("could not decode config file contents from path %s: %v\n", configPath, err)
 	}
 
 	var wg sync.WaitGroup
