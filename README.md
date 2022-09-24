@@ -27,7 +27,7 @@ or can process single .srt file using args
 Want to contribute? Awesome! The most basic way to show your support is to star the project or to raise issues. Pull requests are highly welcome.
 
 Please make sure to update tests as appropriate.
-## Potential Maintainers
+## Maintainers
 [Jarri Abidi](https://github.com/jarri-abidi)\
 [Faisal Nisar](https://github.com/markhaur)
 ## Credits
