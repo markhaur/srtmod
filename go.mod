@@ -1,4 +1,4 @@
-module github.com/markhaur/srt-time-modifier
+module github.com/markhaur/srtmod
 
 go 1.18
 

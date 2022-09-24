@@ -1,10 +1,10 @@
 files:
-  - inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E01.srt"
-    outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E01.srt"
+  - inputFile: "input/Hz.Omer.S01E01.srt"
+    outputFile: "output/Hz.Omer.S01E01.srt"
     offset: -1m
-  - inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E24.srt"
-    outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E24.srt"
+  - inputFile: "input/Hz.Omer.S01E24.srt"
+    outputFile: "output/Hz.Omer.S01E24.srt"
     offset: -5s
-  - inputFile: "/home/markhaur/srt-time-modifier/input/Hz.Omer.S01E25.srt"
-    outputFile: "/home/markhaur/srt-time-modifier/output/Hz.Omer.S01E25.srt"
+  - inputFile: "input/Hz.Omer.S01E25.srt"
+    outputFile: "output/Hz.Omer.S01E25.srt"
     offset: -4s
