@@ -33,6 +33,6 @@ Please make sure to update tests as appropriate.
 ## Credits
 This project exists, thanks to all the people who contribute.
 
-<a href="https://github.com/codeforcauseorg/edu-client/graphs/contributors">
+<a href="https://github.com/markhaur/srtmod/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=markhaur/srtmod" />
 </a>
