@@ -1,6 +1,6 @@
 # srtmod
 
-**srtmod** is a CLI application written in [Go](https://go.dev/) and delivered as a [single executable](https://github.com/markhaur/srtmod/releases/tag/v0.1.1) to add/subtract time offset from .srt subtitle files.
+**srtmod** is a CLI application written in [Go](https://go.dev/) and delivered as a [single executable](https://github.com/markhaur/srtmod/releases) to add/subtract time offset from .srt subtitle files.
 ## Usage
 Here's a sample `config.yml` file.
 ```yml
