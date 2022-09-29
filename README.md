@@ -36,3 +36,6 @@ This project exists, thanks to all the people who contribute.
 <a href="https://github.com/markhaur/srtmod/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=markhaur/srtmod" />
 </a>
+
+## License
+[![MIT](https://img.shields.io/github/license/markhaur/srtmod)](https://github.com/markhaur/srtmod/blob/master/LICENSE)
