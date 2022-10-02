@@ -1,4 +1,5 @@
-# srtmod
+# srtmod 
+[![MIT](https://img.shields.io/github/license/markhaur/srtmod)](https://github.com/markhaur/srtmod/blob/master/LICENSE)
 
 **srtmod** is a CLI application written in [Go](https://go.dev/) and delivered as a [single executable](https://github.com/markhaur/srtmod/releases) to add/subtract time offset from .srt subtitle files.
 ## Usage
@@ -36,6 +37,3 @@ This project exists, thanks to all the people who contribute.
 <a href="https://github.com/markhaur/srtmod/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=markhaur/srtmod" />
 </a>
-
-## License
-[![MIT](https://img.shields.io/github/license/markhaur/srtmod)](https://github.com/markhaur/srtmod/blob/master/LICENSE)
